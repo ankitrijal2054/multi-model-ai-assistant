@@ -1,6 +1,6 @@
-# 🧠📸 Gemini Vision Chat Assistant
+# 🧠📸 AI Image Assistant Powered By Gemini Vision
 
-Gemini Vision Chat Assistant is a Streamlit-based multimodal AI chatbot that allows users to upload an image and either:
+AI Image Assistant is a Streamlit-based multimodal AI chatbot powered by gemini vision that allows users to upload an image and either:
 
 - 💬 Ask questions about the image (visual chat)
 - 📝 Generate image captions (single or multiple)
@@ -25,7 +25,7 @@ Powered by **Google's Gemini 1.5 Flash** model, this app brings together image u
 
 <img src="screenshots/home.png" alt="Main Interface" width="600" />
 
-<img src="screenshots/caption.gif" alt="Caption Mode" width="600" />
+<img src="screenshots/caption.png" alt="Caption Mode" width="600" />
 
 <img src="screenshots/chat.png" alt="Chat Mode" width="600" />
 
