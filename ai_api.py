@@ -3,14 +3,13 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
-API_KEY = os.getenv("GOOGLE_API_KEY")
-genai.configure(api_key=API_KEY)
-
-def ask_gemini_vision(prompt: str, base64_image: str):
+def create_gemini_chat(base64_image):
     model = genai.GenerativeModel("gemini-1.5-flash")
-    response = model.generate_content([
-        {"text": prompt},
+    chat = model.start_chat(history=[])
+    chat.send_message([
+        {"text": "This image will be the context for our conversation."},
         {
             "inline_data": {
                 "mime_type": "image/jpeg",
@@ -18,4 +17,8 @@ def ask_gemini_vision(prompt: str, base64_image: str):
             }
         }
     ])
+    return chat
+
+def ask_gemini_chat(chat, user_input):
+    response = chat.send_message(user_input)
     return response.text
