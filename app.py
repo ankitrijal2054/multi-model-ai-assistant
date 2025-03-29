@@ -69,6 +69,7 @@ with left_col:
             if key in st.session_state:
                 del st.session_state[key]
         st.session_state["uploader_key"] += 1
+        st.session_state["image_bytes"] = None
         st.experimental_rerun()
 
 with right_col:
