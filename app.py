@@ -3,6 +3,11 @@ from ai_api import create_gemini_chat, ask_gemini_chat
 from utils.image_utils import image_to_base64
 from PIL import Image
 import io
+import base64
+
+def get_logo_base64(image_path):
+    with open(image_path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
 
 # --- Page Config ---
 st.set_page_config(page_title="Image Assistant", layout="wide")
@@ -46,7 +51,17 @@ inject_custom_css()
 # --- App Title ---
 col1, col2, col3 = st.columns([1, 2.5, 1])
 with col2:
-    st.title("Image Assistant Powered By Gemini")
+    logo_base64 = get_logo_base64("logo.png")
+
+    st.markdown(
+        f"""
+        <div style='text-align: center;'>
+            <img src='data:image/png;base64,{logo_base64}' width='400'>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 # --- Session State Init ---
 for key in ["uploaded_file", "base64_image", "chat", "chat_history", "caption_text", "caption_chat"]:
