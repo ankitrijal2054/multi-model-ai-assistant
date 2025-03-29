@@ -22,12 +22,19 @@ with st.sidebar:
     st.header("🛠 Options")
     mode = st.radio("Mode", ["Chat with image", "Get a caption"])
     if st.button("🔄 Reset Chat"):
-        for key in st.session_state.keys():
-            del st.session_state[key]
+        keys_to_clear = ["uploaded_file", "base64_image", "chat", "chat_history"]
+        for key in keys_to_clear:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.session_state["uploader_key"] = st.session_state.get("uploader_key", 0) + 1
         st.experimental_rerun()
 
+
+
 # --- File Upload ---
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+uploader_key = st.session_state.get("uploader_key", 0)
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"], key=uploader_key)
+
 
 if uploaded_file:
     if uploaded_file.type not in ["image/jpeg", "image/png"]:
@@ -49,10 +56,22 @@ if uploaded_file:
 # --- Caption Mode ---
 if st.session_state.uploaded_file and mode == "Get a caption":
     st.subheader("📝 Image Caption:")
-    with st.spinner("Generating..."):
-        caption_chat = create_gemini_chat(st.session_state.base64_image)
-        result = ask_gemini_chat(caption_chat, "Describe this image.")
-    st.write(result)
+
+    # Initialize caption state
+    if "caption_text" not in st.session_state:
+        with st.spinner("Generating..."):
+            caption_chat = create_gemini_chat(st.session_state.base64_image)
+            st.session_state.caption_text = ask_gemini_chat(caption_chat, "Generate a caption for this image.")
+
+    # Display the current caption
+    st.write(st.session_state.caption_text)
+
+    # Generate another caption button
+    if st.button("🔁 Generate another caption"):
+        with st.spinner("Regenerating..."):
+            caption_chat = create_gemini_chat(st.session_state.base64_image)
+            st.session_state.caption_text = ask_gemini_chat(caption_chat, "Generate 5 more caption.")
+        st.experimental_rerun()
 
 # --- Chat Mode ---
 elif st.session_state.uploaded_file and mode == "Chat with image":
