@@ -4,8 +4,49 @@ from utils.image_utils import image_to_base64
 from PIL import Image
 import io
 
-st.set_page_config(page_title="Gemini Chat", layout="centered")
-st.title("🧠📸 Gemini Vision Chat Assistant")
+# --- Page Config ---
+st.set_page_config(page_title="Image Assistant", layout="wide")
+
+# --- Custom CSS ---
+def inject_custom_css():
+    st.markdown("""
+        <style>
+        .block-container {
+            padding-top: 2rem;
+        }
+        .chat-message {
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 8px;
+            font-size: 16px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .chat-user {
+            background-color: #DCF8C6;
+            text-align: right;
+            margin-left: auto;
+        }
+        .chat-assistant {
+            background-color: #F1F0F0;
+            text-align: left;
+            margin-right: auto;
+        }
+        .stButton>button {
+            border-radius: 8px;
+            padding: 0.5em 1.5em;
+            background-color: #4CAF50;
+            color: white;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+inject_custom_css()
+
+# --- App Title ---
+col1, col2, col3 = st.columns([1, 2.5, 1])
+with col2:
+    st.title("Image Assistant Powered By Gemini")
 
 # --- Session State Init ---
 for key in ["uploaded_file", "base64_image", "chat", "chat_history", "caption_text", "caption_chat"]:
@@ -18,11 +59,11 @@ if "prev_file_name" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# --- Sidebar Controls ---
-with st.sidebar:
-    st.header("🛠 Options")
-    mode = st.radio("Mode", ["Chat with image", "Get a caption"])
-    if st.button("🔄 Reset Chat"):
+# --- Top Bar with Reset + Mode Toggle ---
+left_col, mid_col, right_col = st.columns([1, 5, 1])
+
+with left_col:
+    if st.button("🔄 New Chat"):
         keys_to_clear = ["uploaded_file", "base64_image", "chat", "chat_history", "caption_text", "caption_chat"]
         for key in keys_to_clear:
             if key in st.session_state:
@@ -30,15 +71,44 @@ with st.sidebar:
         st.session_state["uploader_key"] += 1
         st.experimental_rerun()
 
+with right_col:
+    if "mode" not in st.session_state:
+        st.session_state.mode = "Chat with AI"
+
+    if "mode_toggle_clicked" not in st.session_state:
+        st.session_state.mode_toggle_clicked = False
+
+    # Toggle button logic
+    next_mode = "Caption" if st.session_state.mode == "Chat with AI" else "Chat"
+    if st.button(f"Switch Mode"):
+        st.session_state.mode_toggle_clicked = True
+
+
+    if st.session_state.mode_toggle_clicked:
+        st.session_state.mode = (
+            "Get a caption" if st.session_state.mode == "Chat with AI"
+            else "Chat with AI"
+        )
+        st.session_state.mode_toggle_clicked = False
+        st.experimental_rerun()
+
+mode = st.session_state.mode
+
+with mid_col:
+    st.markdown(
+        f"<div style='text-align:center; font-size:18px;'>🧭 <b>Current Mode:</b> {mode}</div>",
+        unsafe_allow_html=True
+    )
+
+
 # --- File Upload ---
 uploader_key = st.session_state.get("uploader_key", 0)
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"], key=uploader_key)
+uploaded_file = st.file_uploader("📤 Upload an image", type=["jpg", "jpeg", "png"], key=uploader_key)
 
 if uploaded_file:
     if uploaded_file.type not in ["image/jpeg", "image/png"]:
         st.error("❌ Invalid file type! Please upload JPG or PNG.")
     else:
-        # Detect new image upload
         if uploaded_file.name != st.session_state["prev_file_name"]:
             st.session_state["caption_text"] = None
             st.session_state["caption_chat"] = None
@@ -49,13 +119,27 @@ if uploaded_file:
         st.session_state.uploaded_file = uploaded_file
         file_bytes = uploaded_file.read()
         st.session_state.base64_image = image_to_base64(file_bytes, max_size=(1024, 1024))
+        st.session_state["image_bytes"] = file_bytes  #Save raw image bytes
 
-        image = Image.open(io.BytesIO(file_bytes))
-        image.thumbnail((400, 400))
-        st.image(image, caption="Uploaded Image", use_column_width=False)
-
-        if mode == "Chat with image" and st.session_state.chat is None:
+        if mode == "Chat with AI" and st.session_state.chat is None:
             st.session_state.chat = create_gemini_chat(st.session_state.base64_image)
+            
+# --- Display Image (even after rerun) ---
+if st.session_state.get("base64_image"):
+    st.markdown(f"""
+        <div style="
+            max-width: 400px;
+            margin: 0 auto 20px auto;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            text-align: center;
+        ">
+            <img src='data:image/jpeg;base64,{st.session_state.base64_image}' width='350' style="border-radius: 8px;" />
+            <div style="margin-top: 8px; font-size: 14px; color: #666;">📷 Uploaded Image</div>
+        </div>
+    """, unsafe_allow_html=True)
 
 # --- UI Modular Functions ---
 def render_caption_ui():
@@ -66,7 +150,7 @@ def render_caption_ui():
                 st.session_state.caption_chat = create_gemini_chat(st.session_state.base64_image)
             st.session_state.caption_text = ask_gemini_chat(
                 st.session_state.caption_chat,
-                "You are an image captioning expertfor social media. Provide a short, accurate caption for the uploaded image."
+                "You are an image captioning expert for social media. Provide a short, accurate caption for the uploaded image."
             )
     st.write(st.session_state.caption_text)
     if st.button("🔁 Generate another caption"):
@@ -93,7 +177,10 @@ def render_chat_ui():
         st.experimental_rerun()
 
 # --- Mode Handler ---
-if st.session_state.uploaded_file and mode == "Get a caption":
-    render_caption_ui()
-elif st.session_state.uploaded_file and mode == "Chat with image":
-    render_chat_ui()
+if st.session_state.get("image_bytes"):
+    if st.session_state.uploaded_file and mode == "Get a caption":
+        render_caption_ui()
+    elif st.session_state.uploaded_file and mode == "Chat with AI":
+        render_chat_ui()
+else:
+    st.info("👆 Please upload an image to get started.")
