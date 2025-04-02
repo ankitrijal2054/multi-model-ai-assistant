@@ -85,7 +85,7 @@ with left_col:
                 del st.session_state[key]
         st.session_state["uploader_key"] += 1
         st.session_state["image_bytes"] = None
-        st.experimental_rerun()
+        st.rerun()
 
 with right_col:
     if "mode" not in st.session_state:
@@ -106,7 +106,7 @@ with right_col:
             else "Chat with AI"
         )
         st.session_state.mode_toggle_clicked = False
-        st.experimental_rerun()
+        st.rerun()
 
 mode = st.session_state.mode
 
@@ -175,7 +175,7 @@ def render_caption_ui():
                 st.session_state.caption_chat,
                 "Generate 5 more captions for this image."
             )
-        st.experimental_rerun()
+        st.rerun()
 
 def render_chat_ui():
     chat_container = st.container()
@@ -190,7 +190,7 @@ def render_chat_ui():
         with st.spinner("Thinking..."):
             reply = ask_gemini_chat(st.session_state.chat, user_prompt)
         st.session_state.chat_history.append(("assistant", reply))
-        st.experimental_rerun()
+        st.rerun()
 
 # --- Mode Handler ---
 if st.session_state.get("image_bytes"):
